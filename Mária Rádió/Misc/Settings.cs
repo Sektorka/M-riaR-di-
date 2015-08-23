@@ -7,7 +7,7 @@ using System.Xml;
 
 namespace Maria_Radio.Misc
 {
-    public class Settings: ErrorEvent
+    public class Settings : ErrorEvent
     {
         protected Format format;
         protected FileInfo filePath;
@@ -20,8 +20,8 @@ namespace Maria_Radio.Misc
             Xml
         };
 
-        public Settings(string filePath): this(filePath, Format.Xml)
-        {   
+        public Settings(string filePath) : this(filePath, Format.Xml)
+        {
         }
 
         public Settings(string filePath, Format format)
@@ -130,7 +130,7 @@ namespace Maria_Radio.Misc
                             "PublicKeyToken=b03f5f7f11d50a3a"
                         );
                     }
-                    
+
                     xmlWriter.WriteString(pair.Value.ToString());
 
                     xmlWriter.WriteEndElement();

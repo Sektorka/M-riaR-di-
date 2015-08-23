@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Maria_Radio
+namespace Maria_Radio.Data
 {
     public class MountPoint
     {
@@ -18,12 +18,13 @@ namespace Maria_Radio
         public const int INDEX_URL = 8;
         public const int INDEX_CURRENT_SONG = 9;
 
-        private string title, description, contentType, genre, url, currentSong;
+        private string title, description, contentType, genre, url, currentSong, streamURL;
         private DateTime upTime;
         private int bitrate, currentListeners, peakListeners;
 
-        public MountPoint(string title, string description, string contentType, DateTime upTime, int bitrate, int currentListeners, int peakListeners, string genre, string url, string currentSong)
+        public MountPoint(string streamURL, string title, string description, string contentType, DateTime upTime, int bitrate, int currentListeners, int peakListeners, string genre, string url, string currentSong)
         {
+            this.streamURL = streamURL;
             this.title = title;
             this.description = description;
             this.contentType = contentType;
@@ -34,6 +35,11 @@ namespace Maria_Radio
             this.genre = genre;
             this.url = url;
             this.currentSong = currentSong;
+        }
+
+        public string StreamUrl
+        {
+            get { return streamURL; }
         }
 
         public string Title

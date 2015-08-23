@@ -14,7 +14,11 @@ namespace Maria_Radio
         public const string WEBPAGE = "www.mariaradio.hu";
         public const string STAT_URL = "http://apps.gyurasz.eu/mariaradio/?xml";
         public const string VERSION_CHECK_URL = "http://apps.gyurasz.eu/mariaradio/?version=";
-        public const string MOUNTPOINTS_URL = "http://mariaradio.hu:8000/status.xsl";
+
+        public const string BASE_URL = "http://www.mariaradio.hu";
+        public const string PROGRAMS_URL = BASE_URL + "/musorok/musornaptar/{0}";
+        public const string MOUNTPOINTS_URL = BASE_URL + ":8000/status.xsl";
+
         public const string HOST_PING = "google.hu";
         public const string VERSION = "1.2.1.0";
         public const string USER_AGENT = "mariaradio_v" + VERSION;
@@ -63,7 +67,7 @@ namespace Maria_Radio
             if (context.MainForm == null)
             {
                 Application.Idle -= OnAppIdle;
-                context.MainForm = MainForm.GetInstance();
+                context.MainForm = MainForm.Instance;
                 context.MainForm.Show();
                 SplashForm.GetInstance().Close();
             }

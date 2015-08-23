@@ -34,15 +34,10 @@ namespace Maria_Radio
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
             this.lblTitle = new System.Windows.Forms.Label();
             this.lblTimer = new System.Windows.Forms.Label();
-            this.timer = new System.Windows.Forms.Timer(this.components);
+            this.timerUpdatePrograms = new System.Windows.Forms.Timer(this.components);
             this.timerUpdate = new System.Windows.Forms.Timer(this.components);
-            this.volume = new System.Windows.Forms.TrackBar();
             this.lblProgram = new System.Windows.Forms.Label();
             this.notify = new System.Windows.Forms.NotifyIcon(this.components);
             this.lblHeader = new System.Windows.Forms.Label();
@@ -53,24 +48,23 @@ namespace Maria_Radio
             this.miAbout = new System.Windows.Forms.ToolStripMenuItem();
             this.folderBrowserDialog = new System.Windows.Forms.FolderBrowserDialog();
             this.pbLogo = new System.Windows.Forms.PictureBox();
-            this.label1 = new System.Windows.Forms.Label();
-            this.dataGridView = new System.Windows.Forms.DataGridView();
-            this.colTime = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colProgram = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.lblTime = new System.Windows.Forms.Label();
             this.timerTime = new System.Windows.Forms.Timer(this.components);
             this.timerNotify = new System.Windows.Forms.Timer(this.components);
             this.cbMountPoints = new System.Windows.Forms.ComboBox();
+            this.panelControls = new System.Windows.Forms.Panel();
+            this.slVolume = new Maria_Radio.Controls.Slider();
+            this.ibtnPlay = new Maria_Radio.Controls.ImageButton();
+            this.ibtnRecord = new Maria_Radio.Controls.ImageButton();
+            this.timerBuffer = new System.Windows.Forms.Timer(this.components);
+            this.timerUpdatePlayTime = new System.Windows.Forms.Timer(this.components);
             this.btnShowHidePrograms = new Maria_Radio.Controls.ImageButton();
             this.ibtnConfig = new Maria_Radio.Controls.ImageButton();
             this.ibtnMinimize = new Maria_Radio.Controls.ImageButton();
             this.ibtnX = new Maria_Radio.Controls.ImageButton();
-            this.ibtnRecord = new Maria_Radio.Controls.ImageButton();
-            this.ibtnPlay = new Maria_Radio.Controls.ImageButton();
-            ((System.ComponentModel.ISupportInitialize)(this.volume)).BeginInit();
             this.menu.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pbLogo)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.dataGridView)).BeginInit();
+            this.panelControls.SuspendLayout();
             this.SuspendLayout();
             // 
             // lblTitle
@@ -80,9 +74,9 @@ namespace Maria_Radio
             this.lblTitle.BackColor = System.Drawing.Color.Transparent;
             this.lblTitle.Font = new System.Drawing.Font("Arial", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(240)));
             this.lblTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(153)))), ((int)(((byte)(255)))));
-            this.lblTitle.Location = new System.Drawing.Point(92, 42);
+            this.lblTitle.Location = new System.Drawing.Point(83, 3);
             this.lblTitle.Name = "lblTitle";
-            this.lblTitle.Size = new System.Drawing.Size(428, 18);
+            this.lblTitle.Size = new System.Drawing.Size(424, 18);
             this.lblTitle.TabIndex = 2;
             // 
             // lblTimer
@@ -91,38 +85,21 @@ namespace Maria_Radio
             this.lblTimer.BackColor = System.Drawing.Color.Transparent;
             this.lblTimer.Font = new System.Drawing.Font("Arial", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(240)));
             this.lblTimer.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(153)))), ((int)(((byte)(255)))));
-            this.lblTimer.Location = new System.Drawing.Point(92, 98);
+            this.lblTimer.Location = new System.Drawing.Point(83, 59);
             this.lblTimer.Name = "lblTimer";
             this.lblTimer.Size = new System.Drawing.Size(86, 18);
             this.lblTimer.TabIndex = 4;
             this.lblTimer.Text = "00 : 00 : 00";
             // 
-            // timer
+            // timerUpdatePrograms
             // 
-            this.timer.Interval = 1000;
-            this.timer.Tick += new System.EventHandler(this.timer_Tick);
+            this.timerUpdatePrograms.Interval = 1000;
             // 
             // timerUpdate
             // 
             this.timerUpdate.Enabled = true;
             this.timerUpdate.Interval = 60000;
             this.timerUpdate.Tick += new System.EventHandler(this.timerUpdate_Tick);
-            // 
-            // volume
-            // 
-            this.volume.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.volume.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.volume.LargeChange = 10;
-            this.volume.Location = new System.Drawing.Point(120, 125);
-            this.volume.Maximum = 100;
-            this.volume.Name = "volume";
-            this.volume.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.volume.Size = new System.Drawing.Size(400, 45);
-            this.volume.TabIndex = 6;
-            this.volume.TickFrequency = 5;
-            this.volume.TickStyle = System.Windows.Forms.TickStyle.Both;
-            this.volume.Scroll += new System.EventHandler(this.volume_Scroll);
             // 
             // lblProgram
             // 
@@ -131,9 +108,9 @@ namespace Maria_Radio
             this.lblProgram.BackColor = System.Drawing.Color.Transparent;
             this.lblProgram.Font = new System.Drawing.Font("Arial", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(240)));
             this.lblProgram.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(153)))), ((int)(((byte)(255)))));
-            this.lblProgram.Location = new System.Drawing.Point(92, 69);
+            this.lblProgram.Location = new System.Drawing.Point(83, 30);
             this.lblProgram.Name = "lblProgram";
-            this.lblProgram.Size = new System.Drawing.Size(428, 18);
+            this.lblProgram.Size = new System.Drawing.Size(424, 18);
             this.lblProgram.TabIndex = 7;
             // 
             // notify
@@ -172,7 +149,7 @@ namespace Maria_Radio
             this.lblRecording.Cursor = System.Windows.Forms.Cursors.Hand;
             this.lblRecording.Font = new System.Drawing.Font("Arial", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(240)));
             this.lblRecording.ForeColor = System.Drawing.Color.Red;
-            this.lblRecording.Location = new System.Drawing.Point(194, 98);
+            this.lblRecording.Location = new System.Drawing.Point(185, 59);
             this.lblRecording.Name = "lblRecording";
             this.lblRecording.Size = new System.Drawing.Size(217, 18);
             this.lblRecording.TabIndex = 11;
@@ -219,84 +196,11 @@ namespace Maria_Radio
             // 
             this.pbLogo.BackColor = System.Drawing.Color.Transparent;
             this.pbLogo.Image = ((System.Drawing.Image)(resources.GetObject("pbLogo.Image")));
-            this.pbLogo.Location = new System.Drawing.Point(12, 42);
+            this.pbLogo.Location = new System.Drawing.Point(3, 3);
             this.pbLogo.Name = "pbLogo";
             this.pbLogo.Size = new System.Drawing.Size(74, 74);
             this.pbLogo.TabIndex = 1;
             this.pbLogo.TabStop = false;
-            // 
-            // label1
-            // 
-            this.label1.BackColor = System.Drawing.SystemColors.Highlight;
-            this.label1.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
-            this.label1.ForeColor = System.Drawing.SystemColors.Highlight;
-            this.label1.Location = new System.Drawing.Point(10, 191);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(511, 2);
-            this.label1.TabIndex = 13;
-            // 
-            // dataGridView
-            // 
-            this.dataGridView.AllowUserToAddRows = false;
-            this.dataGridView.AllowUserToDeleteRows = false;
-            this.dataGridView.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.dataGridView.BackgroundColor = System.Drawing.Color.FromArgb(((int)(((byte)(16)))), ((int)(((byte)(16)))), ((int)(((byte)(16)))));
-            this.dataGridView.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.dataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dataGridView.ColumnHeadersVisible = false;
-            this.dataGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-            this.colTime,
-            this.colProgram});
-            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(16)))), ((int)(((byte)(16)))), ((int)(((byte)(16)))));
-            dataGridViewCellStyle3.Font = new System.Drawing.Font("Arial", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            dataGridViewCellStyle3.ForeColor = System.Drawing.Color.Transparent;
-            dataGridViewCellStyle3.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(32)))), ((int)(((byte)(32)))));
-            dataGridViewCellStyle3.SelectionForeColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle3.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.dataGridView.DefaultCellStyle = dataGridViewCellStyle3;
-            this.dataGridView.GridColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(153)))), ((int)(((byte)(255)))));
-            this.dataGridView.Location = new System.Drawing.Point(12, 208);
-            this.dataGridView.Name = "dataGridView";
-            this.dataGridView.ReadOnly = true;
-            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle4.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle4.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            dataGridViewCellStyle4.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle4.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(153)))), ((int)(((byte)(255)))));
-            dataGridViewCellStyle4.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle4.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dataGridView.RowHeadersDefaultCellStyle = dataGridViewCellStyle4;
-            this.dataGridView.RowHeadersVisible = false;
-            this.dataGridView.RowTemplate.DefaultCellStyle.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(16)))), ((int)(((byte)(16)))), ((int)(((byte)(16)))));
-            this.dataGridView.RowTemplate.DefaultCellStyle.Font = new System.Drawing.Font("Arial", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.dataGridView.RowTemplate.DefaultCellStyle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(51)))), ((int)(((byte)(153)))), ((int)(((byte)(255)))));
-            this.dataGridView.RowTemplate.DefaultCellStyle.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
-            this.dataGridView.RowTemplate.DefaultCellStyle.SelectionForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(51)))), ((int)(((byte)(153)))), ((int)(((byte)(255)))));
-            this.dataGridView.RowTemplate.Resizable = System.Windows.Forms.DataGridViewTriState.False;
-            this.dataGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dataGridView.Size = new System.Drawing.Size(508, 223);
-            this.dataGridView.TabIndex = 14;
-            // 
-            // colTime
-            // 
-            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            this.colTime.DefaultCellStyle = dataGridViewCellStyle1;
-            this.colTime.HeaderText = "Idő";
-            this.colTime.Name = "colTime";
-            this.colTime.ReadOnly = true;
-            this.colTime.Resizable = System.Windows.Forms.DataGridViewTriState.False;
-            // 
-            // colProgram
-            // 
-            this.colProgram.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
-            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            this.colProgram.DefaultCellStyle = dataGridViewCellStyle2;
-            this.colProgram.HeaderText = "Műsor";
-            this.colProgram.Name = "colProgram";
-            this.colProgram.ReadOnly = true;
-            this.colProgram.Resizable = System.Windows.Forms.DataGridViewTriState.False;
             // 
             // lblTime
             // 
@@ -326,12 +230,115 @@ namespace Maria_Radio
             // 
             this.cbMountPoints.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(16)))), ((int)(((byte)(16)))), ((int)(((byte)(16)))));
             this.cbMountPoints.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cbMountPoints.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.cbMountPoints.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(153)))), ((int)(((byte)(255)))));
             this.cbMountPoints.FormattingEnabled = true;
-            this.cbMountPoints.Location = new System.Drawing.Point(197, 65);
+            this.cbMountPoints.Location = new System.Drawing.Point(12, 37);
             this.cbMountPoints.Name = "cbMountPoints";
-            this.cbMountPoints.Size = new System.Drawing.Size(300, 21);
+            this.cbMountPoints.Size = new System.Drawing.Size(508, 21);
             this.cbMountPoints.TabIndex = 17;
+            this.cbMountPoints.SelectedIndexChanged += new System.EventHandler(this.cbMountPoints_SelectedIndexChanged);
+            // 
+            // panelControls
+            // 
+            this.panelControls.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.panelControls.Controls.Add(this.slVolume);
+            this.panelControls.Controls.Add(this.pbLogo);
+            this.panelControls.Controls.Add(this.ibtnPlay);
+            this.panelControls.Controls.Add(this.lblTitle);
+            this.panelControls.Controls.Add(this.lblTimer);
+            this.panelControls.Controls.Add(this.ibtnRecord);
+            this.panelControls.Controls.Add(this.lblRecording);
+            this.panelControls.Controls.Add(this.lblProgram);
+            this.panelControls.Location = new System.Drawing.Point(12, 64);
+            this.panelControls.Name = "panelControls";
+            this.panelControls.Size = new System.Drawing.Size(508, 137);
+            this.panelControls.TabIndex = 18;
+            // 
+            // slVolume
+            // 
+            this.slVolume.Animated = false;
+            this.slVolume.AnimationSize = 0.2F;
+            this.slVolume.AnimationSpeed = Maria_Radio.Controls.Slider.AnimateSpeed.Normal;
+            this.slVolume.AutoScrollMargin = new System.Drawing.Size(0, 0);
+            this.slVolume.AutoScrollMinSize = new System.Drawing.Size(0, 0);
+            this.slVolume.BackColor = System.Drawing.Color.Transparent;
+            this.slVolume.BackgroundImage = null;
+            this.slVolume.ButtonAccentColor = System.Drawing.Color.FromArgb(((int)(((byte)(128)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
+            this.slVolume.ButtonBorderColor = System.Drawing.Color.DimGray;
+            this.slVolume.ButtonColor = System.Drawing.Color.FromArgb(((int)(((byte)(160)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.slVolume.ButtonCornerRadius = ((uint)(4u));
+            this.slVolume.ButtonSize = new System.Drawing.Size(10, 16);
+            this.slVolume.ButtonStyle = Maria_Radio.Controls.Slider.ButtonType.GlassInline;
+            this.slVolume.ContextMenuStrip = null;
+            this.slVolume.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.slVolume.LargeChange = 10;
+            this.slVolume.Location = new System.Drawing.Point(108, 83);
+            this.slVolume.Margin = new System.Windows.Forms.Padding(0);
+            this.slVolume.Maximum = 100;
+            this.slVolume.Minimum = 0;
+            this.slVolume.Name = "slVolume";
+            this.slVolume.Orientation = System.Windows.Forms.Orientation.Horizontal;
+            this.slVolume.ShowButtonOnHover = false;
+            this.slVolume.Size = new System.Drawing.Size(399, 48);
+            this.slVolume.SliderFlyOut = Maria_Radio.Controls.Slider.FlyOutStyle.None;
+            this.slVolume.SmallChange = 1;
+            this.slVolume.SmoothScrolling = false;
+            this.slVolume.TabIndex = 23;
+            this.slVolume.TickColor = System.Drawing.Color.DarkGray;
+            this.slVolume.TickStyle = System.Windows.Forms.TickStyle.BottomRight;
+            this.slVolume.TickType = Maria_Radio.Controls.Slider.TickMode.Composite;
+            this.slVolume.TrackBorderColor = System.Drawing.SystemColors.ControlDarkDark;
+            this.slVolume.TrackDepth = 6;
+            this.slVolume.TrackFillColor = System.Drawing.Color.Transparent;
+            this.slVolume.TrackProgressColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(153)))), ((int)(((byte)(255)))));
+            this.slVolume.TrackShadow = true;
+            this.slVolume.TrackShadowColor = System.Drawing.Color.DarkGray;
+            this.slVolume.TrackStyle = Maria_Radio.Controls.Slider.TrackType.Progress;
+            this.slVolume.Value = 10;
+            this.slVolume.ValueChanged += new Maria_Radio.Controls.Slider.ValueChangedDelegate(this.slVolume_ValueChanged);
+            // 
+            // ibtnPlay
+            // 
+            this.ibtnPlay.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(16)))), ((int)(((byte)(16)))), ((int)(((byte)(16)))));
+            this.ibtnPlay.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.ibtnPlay.DisabledImage = global::Maria_Radio.Properties.Resources.play_d;
+            this.ibtnPlay.Enabled = false;
+            this.ibtnPlay.ForeColor = System.Drawing.Color.Transparent;
+            this.ibtnPlay.HoverImage = global::Maria_Radio.Properties.Resources.play_h;
+            this.ibtnPlay.Location = new System.Drawing.Point(3, 83);
+            this.ibtnPlay.Name = "ibtnPlay";
+            this.ibtnPlay.NormalImage = global::Maria_Radio.Properties.Resources.play;
+            this.ibtnPlay.PushedImage = global::Maria_Radio.Properties.Resources.play_p;
+            this.ibtnPlay.Size = new System.Drawing.Size(48, 48);
+            this.ibtnPlay.TabIndex = 0;
+            this.ibtnPlay.Click += new System.EventHandler(this.ibtnPlay_Click);
+            // 
+            // ibtnRecord
+            // 
+            this.ibtnRecord.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(16)))), ((int)(((byte)(16)))), ((int)(((byte)(16)))));
+            this.ibtnRecord.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.ibtnRecord.DisabledImage = global::Maria_Radio.Properties.Resources.record_d;
+            this.ibtnRecord.Enabled = false;
+            this.ibtnRecord.ForeColor = System.Drawing.Color.Transparent;
+            this.ibtnRecord.HoverImage = ((System.Drawing.Image)(resources.GetObject("ibtnRecord.HoverImage")));
+            this.ibtnRecord.Location = new System.Drawing.Point(57, 83);
+            this.ibtnRecord.Name = "ibtnRecord";
+            this.ibtnRecord.NormalImage = global::Maria_Radio.Properties.Resources.record;
+            this.ibtnRecord.PushedImage = ((System.Drawing.Image)(resources.GetObject("ibtnRecord.PushedImage")));
+            this.ibtnRecord.Size = new System.Drawing.Size(48, 48);
+            this.ibtnRecord.TabIndex = 5;
+            this.ibtnRecord.Click += new System.EventHandler(this.ibtnRecord_Click);
+            // 
+            // timerBuffer
+            // 
+            this.timerBuffer.Interval = 500;
+            this.timerBuffer.Tick += new System.EventHandler(this.timerBuffer_Tick);
+            // 
+            // timerUpdatePlayTime
+            // 
+            this.timerUpdatePlayTime.Tick += new System.EventHandler(this.timerUpdatePlayTime_Tick);
             // 
             // btnShowHidePrograms
             // 
@@ -339,11 +346,11 @@ namespace Maria_Radio
             this.btnShowHidePrograms.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(16)))), ((int)(((byte)(16)))), ((int)(((byte)(16)))));
             this.btnShowHidePrograms.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnShowHidePrograms.HoverImage = ((System.Drawing.Image)(resources.GetObject("btnShowHidePrograms.HoverImage")));
-            this.btnShowHidePrograms.Location = new System.Drawing.Point(490, 167);
+            this.btnShowHidePrograms.Location = new System.Drawing.Point(499, 207);
             this.btnShowHidePrograms.Name = "btnShowHidePrograms";
             this.btnShowHidePrograms.NormalImage = ((System.Drawing.Image)(resources.GetObject("btnShowHidePrograms.NormalImage")));
             this.btnShowHidePrograms.PushedImage = ((System.Drawing.Image)(resources.GetObject("btnShowHidePrograms.PushedImage")));
-            this.btnShowHidePrograms.Size = new System.Drawing.Size(24, 16);
+            this.btnShowHidePrograms.Size = new System.Drawing.Size(20, 16);
             this.btnShowHidePrograms.TabIndex = 16;
             this.btnShowHidePrograms.Click += new System.EventHandler(this.btnShowHidePrograms_Click);
             // 
@@ -392,59 +399,20 @@ namespace Maria_Radio
             this.ibtnX.TabIndex = 8;
             this.ibtnX.Click += new System.EventHandler(this.ibtnX_Click);
             // 
-            // ibtnRecord
-            // 
-            this.ibtnRecord.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(16)))), ((int)(((byte)(16)))), ((int)(((byte)(16)))));
-            this.ibtnRecord.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.ibtnRecord.DisabledImage = global::Maria_Radio.Properties.Resources.record_d;
-            this.ibtnRecord.ForeColor = System.Drawing.Color.Transparent;
-            this.ibtnRecord.HoverImage = ((System.Drawing.Image)(resources.GetObject("ibtnRecord.HoverImage")));
-            this.ibtnRecord.Location = new System.Drawing.Point(66, 125);
-            this.ibtnRecord.Name = "ibtnRecord";
-            this.ibtnRecord.NormalImage = global::Maria_Radio.Properties.Resources.record;
-            this.ibtnRecord.PushedImage = ((System.Drawing.Image)(resources.GetObject("ibtnRecord.PushedImage")));
-            this.ibtnRecord.Size = new System.Drawing.Size(48, 48);
-            this.ibtnRecord.TabIndex = 5;
-            this.ibtnRecord.Click += new System.EventHandler(this.ibtnRecord_Click);
-            // 
-            // ibtnPlay
-            // 
-            this.ibtnPlay.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(16)))), ((int)(((byte)(16)))), ((int)(((byte)(16)))));
-            this.ibtnPlay.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.ibtnPlay.DisabledImage = global::Maria_Radio.Properties.Resources.play_d;
-            this.ibtnPlay.ForeColor = System.Drawing.Color.Transparent;
-            this.ibtnPlay.HoverImage = global::Maria_Radio.Properties.Resources.play_h;
-            this.ibtnPlay.Location = new System.Drawing.Point(12, 125);
-            this.ibtnPlay.Name = "ibtnPlay";
-            this.ibtnPlay.NormalImage = global::Maria_Radio.Properties.Resources.play;
-            this.ibtnPlay.PushedImage = global::Maria_Radio.Properties.Resources.play_p;
-            this.ibtnPlay.Size = new System.Drawing.Size(48, 48);
-            this.ibtnPlay.TabIndex = 0;
-            this.ibtnPlay.Click += new System.EventHandler(this.ibtnPlay_Click);
-            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(16)))), ((int)(((byte)(16)))), ((int)(((byte)(16)))));
-            this.ClientSize = new System.Drawing.Size(532, 186);
+            this.ClientSize = new System.Drawing.Size(532, 235);
+            this.Controls.Add(this.panelControls);
             this.Controls.Add(this.cbMountPoints);
             this.Controls.Add(this.btnShowHidePrograms);
             this.Controls.Add(this.lblTime);
-            this.Controls.Add(this.lblRecording);
-            this.Controls.Add(this.dataGridView);
-            this.Controls.Add(this.label1);
             this.Controls.Add(this.ibtnConfig);
             this.Controls.Add(this.lblHeader);
             this.Controls.Add(this.ibtnMinimize);
             this.Controls.Add(this.ibtnX);
-            this.Controls.Add(this.lblProgram);
-            this.Controls.Add(this.volume);
-            this.Controls.Add(this.ibtnRecord);
-            this.Controls.Add(this.lblTimer);
-            this.Controls.Add(this.lblTitle);
-            this.Controls.Add(this.pbLogo);
-            this.Controls.Add(this.ibtnPlay);
             this.Cursor = System.Windows.Forms.Cursors.Default;
             this.ForeColor = System.Drawing.Color.Transparent;
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
@@ -457,10 +425,11 @@ namespace Maria_Radio
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
             this.LocationChanged += new System.EventHandler(this.MainForm_LocationChanged);
             this.MouseDown += new System.Windows.Forms.MouseEventHandler(this.MainForm_MouseDown);
-            ((System.ComponentModel.ISupportInitialize)(this.volume)).EndInit();
+            this.Move += new System.EventHandler(this.MainForm_Move);
             this.menu.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.pbLogo)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.dataGridView)).EndInit();
+            this.panelControls.ResumeLayout(false);
+            this.panelControls.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -472,10 +441,9 @@ namespace Maria_Radio
         private PictureBox pbLogo;
         private Label lblTitle;
         private Label lblTimer;
-        private Timer timer;
+        private Timer timerUpdatePrograms;
         private Timer timerUpdate;
         private ImageButton ibtnRecord;
-        private TrackBar volume;
         private Label lblProgram;
         private ImageButton ibtnX;
         private ImageButton ibtnMinimize;
@@ -487,16 +455,16 @@ namespace Maria_Radio
         private ContextMenuStrip menu;
         private ToolStripMenuItem miAbout;
         private FolderBrowserDialog folderBrowserDialog;
-        private Label label1;
-        private DataGridView dataGridView;
-        private DataGridViewTextBoxColumn colTime;
-        private DataGridViewTextBoxColumn colProgram;
         private Label lblTime;
         private Timer timerTime;
         private Timer timerNotify;
         private ToolStripMenuItem miSettings;
         private ImageButton btnShowHidePrograms;
         private ComboBox cbMountPoints;
+        private Panel panelControls;
+        private Timer timerBuffer;
+        private Timer timerUpdatePlayTime;
+        private Slider slVolume;
     }
 }
 
