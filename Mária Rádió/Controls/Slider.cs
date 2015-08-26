@@ -11,7 +11,7 @@ using Timer = System.Timers.Timer;
 namespace Maria_Radio.Controls
 {
     [DefaultEvent("ValueChanged"), ToolboxBitmap(typeof(Slider), "tbimage")]
-    public partial class Slider : UserControl
+    public class Slider : UserControl
     {
         #region Constants
         private const int TrackMinDepth = 2;
@@ -231,16 +231,16 @@ namespace Maria_Radio.Controls
 
         private void InitializeComponent()
         {
-            this.SuspendLayout();
+            SuspendLayout();
             // 
             // MediaSlider
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.Color.Transparent;
-            this.Margin = new System.Windows.Forms.Padding(0);
-            this.Name = "Slider";
-            this.ResumeLayout(false);
+            AutoScaleDimensions = new SizeF(6F, 13F);
+            AutoScaleMode = AutoScaleMode.Font;
+            BackColor = Color.Transparent;
+            Margin = new Padding(0);
+            Name = "Slider";
+            ResumeLayout(false);
         }
 
         private void Init()

@@ -18,6 +18,7 @@ namespace Maria_Radio
         public const string BASE_URL = "http://www.mariaradio.hu";
         public const string PROGRAMS_URL = BASE_URL + "/musorok/musornaptar/{0}";
         public const string MOUNTPOINTS_URL = BASE_URL + ":8000/status.xsl";
+        public const string M3U_PRE_URL = BASE_URL + ":8000";
 
         public const string HOST_PING = "google.hu";
         public const string VERSION = "1.2.1.0";

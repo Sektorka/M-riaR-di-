@@ -11,6 +11,7 @@ using System.Threading;
 using System.Windows.Forms;
 using System.Xml;
 using HtmlAgilityPack;
+using Maria_Radio.Data;
 using Maria_Radio.Properties;
 using Microsoft.WindowsAPICodePack.Taskbar;
 using WMPLib;
@@ -29,23 +30,29 @@ namespace Maria_Radio
         private const int
             WS_MINIMIZEBOX = 0x20000,
             CS_DBLCLKS = 0x8,
-            SELECTED_PROGRAM_BITRATE = 128,
+            SELECTED_PROGRAM_BITRATE = 128000,
             DEF_VOLUME = 100;
 
         private const string
-            BUFFER_TEXT = "Pufferelés... {0:D0} %",
-            SELECTED_PROGRAM_TITLE = "Maria Radio musor",
-            VOLUME_TITLE = "Hang [{0:D}%]";
+            TITLE_BUFFERING = "Pufferelés... {0:D0}%",
+            TITLE_SELECTED_PROGRAM = "Maria Radio musor",
+            TITLE_VOLUME = "Hang: {0:D}%",
+            TITLE_NO_INTERNET_CONNECTION = "Nincs internet kapcsolat!",
+            TITLE_CONNECTING = "Kapcsolódás...",
+            TITLE_RECORDING = "Felvétel:  {0}  |  {1}",
+            TITLE_LISTENING = "Hallgatás",
+            TITLE_PAUSING = "Szüneteltetés",
+            TITLE_RECORD = "Felvétel";
 
         //variables
         private bool recording, lighted, initialized;
-        private string streamURL, dir, filename;
+        private string dir, filename;
         private int notifyCounter;
 
         private WindowsMediaPlayer player;
         private Thread tRecord, tUpdate, tUpdateCheck;
         private Settings settings = Program.settings;
-        private List<Data.MountPoint> mountPoints;
+        private List<MountPoint> mountPoints;
         private ProgramList<Data.Program> programs;
         private ThumbnailToolbarButton btnPlay, btnRecord;
         private ToolTip ttRecording, ttVolume, ttTitle, ttProgram;
@@ -72,6 +79,22 @@ namespace Maria_Radio
             }
         }
 
+        //OK
+        private string StreamURL
+        {
+            get
+            {
+                if (cbMountPoints.InvokeRequired)
+                {
+                    return (string)cbMountPoints.Invoke(
+                        new Func<string>(() => StreamURL)
+                    );
+                }
+
+                return (cbMountPoints.SelectedItem as MountPoint).StreamUrl;
+            }
+        }
+
         private MainForm()
         {
             InitializeComponent();
@@ -87,8 +110,7 @@ namespace Maria_Radio
 
             NetworkChange.NetworkAddressChanged += NetworkChange_NetworkAddressChanged;
 
-            GetHttpContent(Program.MOUNTPOINTS_URL, SetMountPointList);
-            GetHttpContent(string.Format(Program.PROGRAMS_URL, DateTime.Now.ToString("yyyyMMdd")), SetProgramList);
+            UpdateStat();
         }
 
         #region private methods
@@ -164,11 +186,12 @@ namespace Maria_Radio
             TopMost = settings.getValue(skGen.AlwaysOnTop, false);
         }
 
+        //OK
         private void InitializeMediaPlayer()
         {
             slVolume.Value = settings.getValue(skProg.Volume, DEF_VOLUME);
             ttVolume = ttVolume ?? new ToolTip();
-            ttVolume.SetToolTip(slVolume, string.Format(VOLUME_TITLE, slVolume.Value));
+            ttVolume.SetToolTip(slVolume, string.Format(TITLE_VOLUME, slVolume.Value));
 
             player = new WindowsMediaPlayer();
             player.settings.volume = slVolume.Value;
@@ -178,63 +201,48 @@ namespace Maria_Radio
             player.PlayStateChange += player_PlayStateChange;
         }
 
+        //OK
         private void SetPlayButtons()
         {
-            ibtnPlay.NormalImage = Resources.pause;
-            ibtnPlay.HoverImage = Resources.pause_h;
-            ibtnPlay.PushedImage = Resources.pause_p;
-
-            if (TaskbarManager.IsPlatformSupported)
+            if (isPlayingBuffering())
             {
-                btnPlay.Icon = Resources.ipause;
-                btnPlay.Tooltip = "Szüneteltetés";
-            }
-        }
+                ibtnPlay.NormalImage = Resources.pause;
+                ibtnPlay.HoverImage = Resources.pause_h;
+                ibtnPlay.PushedImage = Resources.pause_p;
 
-        private void SetPauseButtons()
-        {
-            ibtnPlay.NormalImage = Resources.play;
-            ibtnPlay.HoverImage = Resources.play_h;
-            ibtnPlay.PushedImage = Resources.play_p;
-            if (TaskbarManager.IsPlatformSupported)
+                if (TaskbarManager.IsPlatformSupported)
+                {
+                    btnPlay.Icon = Resources.ipause;
+                    btnPlay.Tooltip = TITLE_PAUSING;
+                }
+            }
+            else
             {
-                btnPlay.Icon = Resources.iplay;
-                btnPlay.Tooltip = "Hallgatás";
+                ibtnPlay.NormalImage = Resources.play;
+                ibtnPlay.HoverImage = Resources.play_h;
+                ibtnPlay.PushedImage = Resources.play_p;
+
+                if (TaskbarManager.IsPlatformSupported)
+                {
+                    btnPlay.Icon = Resources.iplay;
+                    btnPlay.Tooltip = TITLE_LISTENING;
+                }
             }
+            
         }
-
-        private void Play()
-        {
-            SetPlayButtons();
-            player.URL = (cbMountPoints.SelectedItem as Data.MountPoint).StreamUrl;
-            player.controls.play();
-        }
-
-        private void Stop()
-        {
-            SetPauseButtons();
-            player.controls.stop();
-            player.close();
-
-            player = new WindowsMediaPlayer();
-            player.settings.volume = settings.getValue(skProg.Volume, DEF_VOLUME);
-            player.settings.autoStart = false;
-            player.URL = streamURL;
-            player.Buffering += player_Buffering;
-            player.PlayStateChange += player_PlayStateChange;
-
-            //player.newMedia(this.streamURL);
-            timerUpdatePrograms.Enabled = false;
-            lblTimer.Text = TimeSpan.FromSeconds(0).ToString();
-            UpdateTaskBarIcon();
-        }
-
+        
+        //OK
         private void PlayStop()
         {
-            if (player.playState == WMPPlayState.wmppsPlaying)
-                Stop();
+            if (isPlayingBuffering())
+            {
+                player.controls.stop();
+            }
             else
-                Play();
+            {
+                player.URL = StreamURL;
+                player.controls.play();
+            }
         }
 
         private void Record()
@@ -260,6 +268,7 @@ namespace Maria_Radio
                     Process.Start("explorer.exe", @"/select, " + dir + filename + ".mp3");
                 }
             }
+
             UpdateTaskBarIcon();
         }
 
@@ -271,7 +280,7 @@ namespace Maria_Radio
             ibtnRecord.NormalImage = Resources.record;
             timerRecording.Enabled = false;
             lblRecording.Visible = false;
-            lblRecording.Text = "Felvétel:  00 : 00 : 00  |  0.00 B";
+            lblRecording.Text = string.Format(TITLE_RECORDING, TimeSpan.FromSeconds(0L), FormatBytes(0));
         }
 
         private void GetHttpContent(string url, GotHttpContent method)
@@ -330,7 +339,7 @@ namespace Maria_Radio
             Stream socketStream = null;
             Stream byteOut = null;
 
-            request = (HttpWebRequest)WebRequest.Create(streamURL);
+            request = (HttpWebRequest)WebRequest.Create(StreamURL);
 
             request.Headers.Clear();
             request.Method = "GET";
@@ -413,6 +422,7 @@ namespace Maria_Radio
             }
         }
 
+        //OK
         private void SetProgramsFormBounds()
         {
             ProgramsForm.Instance.Bounds = new Rectangle(
@@ -422,6 +432,7 @@ namespace Maria_Radio
                     ProgramsForm.Instance.Height);
         }
 
+        //OK
         private void ShowProgramForm(bool show)
         {
             if (show)
@@ -451,21 +462,39 @@ namespace Maria_Radio
 
         private void UpdateTaskBarIcon()
         {
-            if (!TaskbarManager.IsPlatformSupported) return;
+            if (!TaskbarManager.IsPlatformSupported)
+            {
+                return;
+            }
 
-            if (recording && player.playState == WMPPlayState.wmppsPlaying)
-                TaskbarManager.Instance.SetOverlayIcon(Resources.pr, "Hallgatás / Felvétel");
-            else if (recording && player.playState != WMPPlayState.wmppsPlaying)
-                TaskbarManager.Instance.SetOverlayIcon(Resources.irecord, "Felvétel");
-            else if (!recording && player.playState == WMPPlayState.wmppsPlaying)
-                TaskbarManager.Instance.SetOverlayIcon(Resources.iplay, "Hallgatás");
+            if (recording && isPlayingBuffering())
+            {
+                TaskbarManager.Instance.SetOverlayIcon(Handle, Resources.pr, "Hallgatás / Felvétel");
+            }   
+            else if (recording && !isPlayingBuffering())
+            {
+                TaskbarManager.Instance.SetOverlayIcon(Handle, Resources.irecord, TITLE_RECORD);
+            }   
+            else if (!recording && isPlayingBuffering())
+            {
+                TaskbarManager.Instance.SetOverlayIcon(Handle, Resources.iplay, TITLE_LISTENING);
+            }
             else
-                TaskbarManager.Instance.SetOverlayIcon(null, "");
+            {
+                TaskbarManager.Instance.SetOverlayIcon(Handle, null, string.Empty);
+            }
         }
 
+        //OK
+        private bool isPlayingBuffering()
+        {
+            return player.playState == WMPPlayState.wmppsPlaying || player.playState == WMPPlayState.wmppsBuffering;
+        }
+
+        //FULL FAIL
         private void UpdateStatSuccess(XmlDocument XMLDoc, bool bThread)
         {
-            try
+            /*try
             {
                 XmlElement doc = XMLDoc.DocumentElement;
                 bool notifyText = false;
@@ -504,7 +533,7 @@ namespace Maria_Radio
                     }
                     else if (el.Name == "streamurl")
                     {
-                        streamURL = el.InnerText;
+                        //StreamURL = el.InnerText;
                     }
                     else if (el.Name == "updatefreq")
                     {
@@ -519,18 +548,18 @@ namespace Maria_Radio
                     }
                     else if (el.Name == "bitrate")
                     {
-                        /*try
+                        try
                         {
                             bitrate = int.Parse(el.InnerText);
                         }
                         catch (Exception)
                         {
                             timerUpdate.Interval = 128000;
-                        }*/
+                        }
                     }
                     else if (el.Name == "programs")
                     {
-                        /*dataGridView.Rows.Clear();
+                        dataGridView.Rows.Clear();
                         if (el.HasChildNodes)
                         {
                             foreach (XmlElement prog in el.ChildNodes)
@@ -545,7 +574,7 @@ namespace Maria_Radio
                                     dataGridView.Rows[row].DefaultCellStyle.SelectionForeColor = Color.FromArgb(55, 194, 55);
                                 }
                             }
-                        }*/
+                        }
                     }
                 }
 
@@ -587,7 +616,7 @@ namespace Maria_Radio
             catch (Exception)
             {
                 UpdateStatFail();
-            }
+            }*/
         }
 
         private void UpdateStatFail()
@@ -600,7 +629,7 @@ namespace Maria_Radio
             notify.BalloonTipText = "Hiba történt az adatok lekérdezése közben!";
             notify.ShowBalloonTip(0);
 
-            if (this == null || IsDisposed || streamURL == null || streamURL.Equals(string.Empty))
+            if (this == null || IsDisposed || StreamURL == null || StreamURL.Equals(string.Empty))
                 UpdateInterfaceByNetwork(false);
             //    Process.GetCurrentProcess().Kill();
         }
@@ -623,10 +652,14 @@ namespace Maria_Radio
             }
         }
 
+        //NEM OK
         private void UpdateStat()
         {
-            tUpdate = new Thread(UpdateStatThread);
-            tUpdate.Start();
+            GetHttpContent(Program.MOUNTPOINTS_URL, SetMountPointList);
+            GetHttpContent(string.Format(Program.PROGRAMS_URL, DateTime.Now.ToString("yyyyMMdd")), SetProgramList);
+
+            /*tUpdate = new Thread(UpdateStatThread);
+            tUpdate.Start();*/
         }
 
         private void CheckForUpdate()
@@ -691,6 +724,7 @@ namespace Maria_Radio
             }
         }
 
+        //OK
         private void ShowForm()
         {
             notify.Visible = false;
@@ -698,13 +732,23 @@ namespace Maria_Radio
             notifyCounter = 0;
             notify.Icon = ((Icon)((new ComponentResourceManager(typeof(MainForm))).GetObject("notify.Icon")));
             Show();
+
+            if (settings.getValue(skProg.ShowPrograms, true))
+            {
+                ShowProgramForm(true);
+            }
+            
         }
 
+        //OK
         private void Minimize()
         {
+            ShowProgramForm(false);
+
             if (settings.getValue(skGen.MinimizeToTray, true))
             {
                 Hide();
+
                 notify.BalloonTipIcon = ToolTipIcon.Info;
                 notify.BalloonTipTitle = Program.NAME;
                 notify.BalloonTipText = "Kattintson a Mária Rádió ikonjára a megjelenítéshez!";
@@ -716,9 +760,11 @@ namespace Maria_Radio
             else
             {
                 WinApi.ShowWindow(Handle, WinApi.SW_SHOWMINIMIZED);
+
             }
         }
 
+        //OK
         private void HideNotify()
         {
             if (Visible)
@@ -727,35 +773,39 @@ namespace Maria_Radio
             }
         }
 
+        //NEM OK
         private void UpdateInterfaceByNetwork(bool hasNetwork)
         {
             if (hasNetwork)
             {
                 lblTitle.ForeColor = Color.FromArgb(40, 153, 255);
-                lblTitle.Text = "Kapcsolódás...";
-                UpdateStat();
+                lblTitle.Text = TITLE_CONNECTING;
+                //UpdateStat();
             }
             else
             {
-                if (player.playState == WMPPlayState.wmppsPlaying)
-                    Stop();
+                if (isPlayingBuffering())
+                {
+                    player.controls.stop();
+                }
                 if (recording)
+                {
                     StopRecord();
-
+                }
+                    
                 lblTitle.ForeColor = Color.FromArgb(255, 0, 0); ;
-                lblTitle.Text = "Nincs internet kapcsolat!";
+                lblTitle.Text = TITLE_NO_INTERNET_CONNECTION;
 
                 notify.Visible = true;
                 notify.BalloonTipIcon = ToolTipIcon.Error;
                 notify.BalloonTipTitle = Program.NAME;
-                notify.BalloonTipText = "Nincs internet kapcsolat!";
+                notify.BalloonTipText = TITLE_NO_INTERNET_CONNECTION;
                 notify.ShowBalloonTip(0);
 
-                lblProgram.Text = "";
+                lblProgram.Text = string.Empty;
                 ibtnPlay.Enabled = false;
                 ibtnRecord.Enabled = false;
                 timerUpdate.Enabled = false;
-                //dataGridView.Rows.Clear();
             }
         }
 
@@ -771,7 +821,7 @@ namespace Maria_Radio
             doc.LoadHtml(content);
             HtmlNodeCollection nodes = doc.DocumentNode.SelectNodes("//div[@class='roundcont']");
 
-            mountPoints = new List<Data.MountPoint>();
+            mountPoints = new List<MountPoint>();
 
             foreach (HtmlNode node in nodes)
             {
@@ -783,39 +833,43 @@ namespace Maria_Radio
                     string m3u = aNodes[0].GetAttributeValue("href", null);
 
                     m3u = m3u?.Substring(0, m3u.LastIndexOf("."));
-                    m3u = m3u.Insert(0, "http://mariaradio.hu:8000");
+                    m3u = m3u.Insert(0, Program.M3U_PRE_URL);
 
                     mountPoints.Add(
-                        new Data.MountPoint(
+                        new MountPoint(
                             m3u,
-                            dataNodes[Data.MountPoint.INDEX_TITLE].InnerText,
-                            dataNodes[Data.MountPoint.INDEX_DESCRIPTION].InnerText,
-                            dataNodes[Data.MountPoint.INDEX_CONTENT_TYPE].InnerText,
-                            DateTime.Parse(dataNodes[Data.MountPoint.INDEX_UPTIME].InnerText),
-                            int.Parse(dataNodes[Data.MountPoint.INDEX_BITRATE].InnerText),
-                            int.Parse(dataNodes[Data.MountPoint.INDEX_CURRENTLISTENERS].InnerText),
-                            int.Parse(dataNodes[Data.MountPoint.INDEX_PEAKLISTENERS].InnerText),
-                            dataNodes[Data.MountPoint.INDEX_GENRE].InnerText,
-                            dataNodes[Data.MountPoint.INDEX_URL].InnerText,
-                            dataNodes[Data.MountPoint.INDEX_CURRENT_SONG].InnerText
+                            dataNodes[MountPoint.INDEX_TITLE].InnerText,
+                            dataNodes[MountPoint.INDEX_DESCRIPTION].InnerText,
+                            dataNodes[MountPoint.INDEX_CONTENT_TYPE].InnerText,
+                            DateTime.Parse(dataNodes[MountPoint.INDEX_UPTIME].InnerText),
+                            int.Parse(dataNodes[MountPoint.INDEX_BITRATE].InnerText) * 1000,
+                            int.Parse(dataNodes[MountPoint.INDEX_CURRENTLISTENERS].InnerText),
+                            int.Parse(dataNodes[MountPoint.INDEX_PEAKLISTENERS].InnerText),
+                            dataNodes[MountPoint.INDEX_GENRE].InnerText,
+                            dataNodes[MountPoint.INDEX_URL].InnerText,
+                            dataNodes[MountPoint.INDEX_CURRENT_SONG].InnerText
                         )
                     );
                 }
             }
 
 
-            foreach (Data.MountPoint mountPoint in mountPoints)
+            foreach (MountPoint mountPoint in mountPoints)
             {
                 cbMountPoints.Items.Add(mountPoint);
 
-                if (mountPoint.Title.Equals(SELECTED_PROGRAM_TITLE) && mountPoint.Bitrate == SELECTED_PROGRAM_BITRATE)
+                if (mountPoint.Title.Equals(TITLE_SELECTED_PROGRAM) && mountPoint.Bitrate == SELECTED_PROGRAM_BITRATE)
                 {
                     cbMountPoints.SelectedItem = mountPoint;
                 }
             }
 
-            ibtnPlay.Enabled = true;
-            ibtnRecord.Enabled = true;
+            if (cbMountPoints.SelectedIndex == -1 && cbMountPoints.Items.Count > 0)
+            {
+                cbMountPoints.SelectedIndex = 0;
+            }
+            
+            ibtnRecord.Enabled = ibtnPlay.Enabled = cbMountPoints.SelectedIndex != -1;
         }
 
         //OK
@@ -1032,6 +1086,7 @@ namespace Maria_Radio
             catch { }
         }
 
+        //OK
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
             if (keyData == Keys.Up)
@@ -1066,15 +1121,16 @@ namespace Maria_Radio
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
+        //OK
         protected override void OnShown(EventArgs e)
         {
             if (TaskbarManager.IsPlatformSupported)
             {
 
-                btnPlay = new ThumbnailToolbarButton(Resources.iplay, "Hallgatás");
+                btnPlay = new ThumbnailToolbarButton(Resources.iplay, TITLE_LISTENING);
                 btnPlay.Click += ibtnPlay_Click;
 
-                btnRecord = new ThumbnailToolbarButton(Resources.irecord, "Felvétel");
+                btnRecord = new ThumbnailToolbarButton(Resources.irecord, TITLE_RECORD);
                 btnRecord.Click += ibtnRecord_Click;
 
                 TaskbarManager.Instance.ThumbnailToolbars.AddButtons(Handle, btnPlay, btnRecord);
@@ -1082,6 +1138,7 @@ namespace Maria_Radio
             base.OnShown(e);
         }
 
+        //OK
         protected override CreateParams CreateParams
         {
             get
@@ -1096,11 +1153,13 @@ namespace Maria_Radio
         #endregion
         
         #region events
+        //OK
         private void settings_onError(Exception e)
         {
             MessageBox.Show(this, e.Message + "\r\n\r\n" + e.StackTrace, e.GetType().FullName, MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
+        //OK
         private void ibtnPlay_Click(object sender, EventArgs e)
         {
             PlayStop();
@@ -1116,7 +1175,7 @@ namespace Maria_Radio
         private void slVolume_ValueChanged(object sender, EventArgs e)
         {
             player.settings.volume = slVolume.Value;
-            ttVolume.SetToolTip(slVolume, string.Format(VOLUME_TITLE, slVolume.Value));
+            ttVolume.SetToolTip(slVolume, string.Format(TITLE_VOLUME, slVolume.Value));
 
             settings.setValue(skProg.Volume, slVolume.Value);
             settings.save();
@@ -1132,11 +1191,13 @@ namespace Maria_Radio
             Close();
         }
 
+        //OK
         private void ibtnMinimize_Click(object sender, EventArgs e)
         {
             Minimize();
         }
 
+        //OK
         private void notify_MouseClick(object sender, MouseEventArgs e)
         {
             ShowForm();
@@ -1176,13 +1237,13 @@ namespace Maria_Radio
             {
                 long size = (new FileInfo(dir + filename + ".mp3")).Length;
 
-                lblRecording.Text = string.Format("Felvétel:  {0}  |  {1}",
-                    TimeSpan.FromSeconds((long)(((double)size * 8) / mountPoints[cbMountPoints.SelectedIndex].Bitrate * 1000)),
+                lblRecording.Text = string.Format(TITLE_RECORDING,
+                    TimeSpan.FromSeconds((long)(((double)size * 8) / (cbMountPoints.SelectedItem as MountPoint).Bitrate)),
                     FormatBytes(size)
                     );
             }
             else
-                lblRecording.Text = "Felvétel:  00 : 00 : 00  |  0.00 B";
+                lblRecording.Text = string.Format(TITLE_RECORDING, TimeSpan.FromSeconds(0L), FormatBytes(0));
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -1223,6 +1284,11 @@ namespace Maria_Radio
             }
         }
 
+        private void timerUpdatePrograms_Tick(object sender, EventArgs e)
+        {
+            UpdateStat();
+        }
+
         private void MainForm_LocationChanged(object sender, EventArgs e)
         {
             if (initialized)
@@ -1249,24 +1315,7 @@ namespace Maria_Radio
         {
             Process.Start("explorer.exe", @"/select, " + dir + filename + ".mp3");
         }
-
-        private void player_Buffering(bool Start)
-        {
-            if (Start)
-            {
-                lblTimer.Text = string.Format(BUFFER_TEXT, 0);
-                timerBuffer.Enabled = true;
-                timerUpdatePlayTime.Enabled = false;
-            }
-            else
-            {
-                lblTimer.Text = string.Format(BUFFER_TEXT, 100);
-                timerBuffer.Enabled = false;
-                timerUpdatePlayTime.Enabled = true;
-                UpdateTaskBarIcon();
-            }
-        }
-
+        
         private void timerNotify_Tick(object sender, EventArgs e)
         {
             if (player.playState != WMPPlayState.wmppsPlaying && !recording) return;
@@ -1315,22 +1364,42 @@ namespace Maria_Radio
             notifyCounter++;
         }
 
+        //OK
+        private void player_Buffering(bool Start)
+        {
+            if (Start)
+            {
+                lblTimer.Text = string.Format(TITLE_BUFFERING, 0);
+                timerBuffer.Enabled = true;
+                timerUpdatePlayTime.Enabled = false;
+
+                UpdateTaskBarIcon();
+                SetPlayButtons();
+            }
+            else
+            {
+                lblTimer.Text = string.Format(TITLE_BUFFERING, 100);
+                timerBuffer.Enabled = false;
+                timerUpdatePlayTime.Enabled = true;
+            }
+        }
+
+        //OK
         private void player_PlayStateChange(int NewState)
         {
-            if (player.playState == WMPPlayState.wmppsPlaying)
+            switch (NewState)
             {
-                switch (NewState)
-                {
-                    case (int)WMPPlayState.wmppsPlaying:
-                        //SetPlayButtons();
-                        timerUpdatePrograms.Enabled = true;
-                        break;
-                    default:
-                        //SetPauseButtons();
-                        timerUpdatePrograms.Enabled = false;
-                        lblTimer.Text = "Pufferelés... " + player.network.bufferingProgress + "%"; ;
-                        break;
-                }
+                case (int)WMPPlayState.wmppsPlaying:
+                    SetPlayButtons();
+                    break;
+                case (int)WMPPlayState.wmppsStopped:
+                    SetPlayButtons();
+                    lblTimer.Text = TimeSpan.FromSeconds(0).ToString();
+                    UpdateTaskBarIcon();
+                    break;
+                case (int)WMPPlayState.wmppsBuffering:
+                    lblTimer.Text = string.Format(TITLE_BUFFERING, player.network.bufferingProgress);
+                    break;
             }
         }
 
@@ -1344,9 +1413,13 @@ namespace Maria_Radio
             SetProgramsFormBounds();
         }
 
+        //OK
         private void timerBuffer_Tick(object sender, EventArgs e)
         {
-            lblTimer.Text = string.Format(BUFFER_TEXT, player.network.bufferingProgress);
+            if (player.playState != WMPPlayState.wmppsStopped)
+            {
+                lblTimer.Text = string.Format(TITLE_BUFFERING, player.network.bufferingProgress);
+            }
         }
 
         //OK
@@ -1355,10 +1428,12 @@ namespace Maria_Radio
             lblTimer.Text = TimeSpan.FromSeconds((long)player.controls.currentPosition).ToString();
         }
 
+        //OK
         private void cbMountPoints_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (player.playState == WMPPlayState.wmppsPlaying)
+            if (isPlayingBuffering())
             {
+                PlayStop();
                 PlayStop();
             }
         }

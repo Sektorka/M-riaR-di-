@@ -1,11 +1,14 @@
-﻿namespace Maria_Radio
+﻿using System.ComponentModel;
+using System.Windows.Forms;
+
+namespace Maria_Radio
 {
     partial class ProgramsForm
     {
         /// <summary>
         /// Required designer variable.
         /// </summary>
-        private System.ComponentModel.IContainer components = null;
+        private IContainer components = null;
 
         /// <summary>
         /// Clean up any resources being used.
@@ -123,7 +126,6 @@
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "ProgramsForm";
-            this.Opacity = 0.9D;
             this.ShowIcon = false;
             this.ShowInTaskbar = false;
             this.Text = "ProgramsForm";
@@ -135,9 +137,9 @@
 
         #endregion
 
-        private System.Windows.Forms.DataGridView dataGridView;
-        private System.Windows.Forms.DataGridViewTextBoxColumn colTime;
-        private System.Windows.Forms.DataGridViewTextBoxColumn colProgram;
-        private System.Windows.Forms.BindingSource programBindingSource;
+        private DataGridView dataGridView;
+        private DataGridViewTextBoxColumn colTime;
+        private DataGridViewTextBoxColumn colProgram;
+        private BindingSource programBindingSource;
     }
 }

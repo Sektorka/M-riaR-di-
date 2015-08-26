@@ -93,7 +93,9 @@ namespace Maria_Radio
             // 
             // timerUpdatePrograms
             // 
-            this.timerUpdatePrograms.Interval = 1000;
+            this.timerUpdatePrograms.Enabled = true;
+            this.timerUpdatePrograms.Interval = 60000;
+            this.timerUpdatePrograms.Tick += new System.EventHandler(this.timerUpdatePrograms_Tick);
             // 
             // timerUpdate
             // 
@@ -419,7 +421,6 @@ namespace Maria_Radio
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.Name = "MainForm";
-            this.Opacity = 0.9D;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Mária Rádió";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);

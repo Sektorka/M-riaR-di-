@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace Maria_Radio.Data
 {
@@ -94,7 +91,7 @@ namespace Maria_Radio.Data
 
         public override string ToString()
         {
-            return String.Format("{0}, {1} kbit/s", title, bitrate);
+            return String.Format("{0}, {1} kbit/s", title, bitrate/1000);
         }
     }
 }
