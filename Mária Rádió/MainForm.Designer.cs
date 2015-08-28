@@ -36,8 +36,7 @@ namespace Maria_Radio
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.lblTitle = new System.Windows.Forms.Label();
             this.lblTimer = new System.Windows.Forms.Label();
-            this.timerUpdatePrograms = new System.Windows.Forms.Timer(this.components);
-            this.timerUpdate = new System.Windows.Forms.Timer(this.components);
+            this.timerUpdateStats = new System.Windows.Forms.Timer(this.components);
             this.lblProgram = new System.Windows.Forms.Label();
             this.notify = new System.Windows.Forms.NotifyIcon(this.components);
             this.lblHeader = new System.Windows.Forms.Label();
@@ -87,21 +86,15 @@ namespace Maria_Radio
             this.lblTimer.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(153)))), ((int)(((byte)(255)))));
             this.lblTimer.Location = new System.Drawing.Point(83, 59);
             this.lblTimer.Name = "lblTimer";
-            this.lblTimer.Size = new System.Drawing.Size(86, 18);
+            this.lblTimer.Size = new System.Drawing.Size(70, 18);
             this.lblTimer.TabIndex = 4;
-            this.lblTimer.Text = "00 : 00 : 00";
+            this.lblTimer.Text = "00:00:00";
             // 
-            // timerUpdatePrograms
+            // timerUpdateStats
             // 
-            this.timerUpdatePrograms.Enabled = true;
-            this.timerUpdatePrograms.Interval = 60000;
-            this.timerUpdatePrograms.Tick += new System.EventHandler(this.timerUpdatePrograms_Tick);
-            // 
-            // timerUpdate
-            // 
-            this.timerUpdate.Enabled = true;
-            this.timerUpdate.Interval = 60000;
-            this.timerUpdate.Tick += new System.EventHandler(this.timerUpdate_Tick);
+            this.timerUpdateStats.Enabled = true;
+            this.timerUpdateStats.Interval = 60000;
+            this.timerUpdateStats.Tick += new System.EventHandler(this.timerUpdateStats_Tick);
             // 
             // lblProgram
             // 
@@ -153,9 +146,9 @@ namespace Maria_Radio
             this.lblRecording.ForeColor = System.Drawing.Color.Red;
             this.lblRecording.Location = new System.Drawing.Point(185, 59);
             this.lblRecording.Name = "lblRecording";
-            this.lblRecording.Size = new System.Drawing.Size(217, 18);
+            this.lblRecording.Size = new System.Drawing.Size(201, 18);
             this.lblRecording.TabIndex = 11;
-            this.lblRecording.Text = "Felvétel:  00 : 00 : 00  |  0.00 B";
+            this.lblRecording.Text = "Felvétel:  00:00:00  |  0.00 B";
             this.lblRecording.Visible = false;
             this.lblRecording.Click += new System.EventHandler(this.lblRecording_Click);
             // 
@@ -442,8 +435,7 @@ namespace Maria_Radio
         private PictureBox pbLogo;
         private Label lblTitle;
         private Label lblTimer;
-        private Timer timerUpdatePrograms;
-        private Timer timerUpdate;
+        private Timer timerUpdateStats;
         private ImageButton ibtnRecord;
         private Label lblProgram;
         private ImageButton ibtnX;

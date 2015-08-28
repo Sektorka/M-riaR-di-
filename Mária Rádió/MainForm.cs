@@ -42,26 +42,25 @@ namespace Maria_Radio
             TITLE_RECORDING = "Felvétel:  {0}  |  {1}",
             TITLE_LISTENING = "Hallgatás",
             TITLE_PAUSING = "Szüneteltetés",
-            TITLE_RECORD = "Felvétel";
+            TITLE_RECORD = "Felvétel",
+            TITLE_LISTEN_RECORD = "Hallgatás / Felvétel",
+            TITLE_STOP_RECORDING = "Felvétel leállítása",
+            TITLE_RECORDER = Program.NAME + " felvevő";
+            
 
         //variables
         private bool recording, lighted, initialized;
-        private string dir, filename;
+        private string recDir, recFilename;
         private int notifyCounter;
 
         private WindowsMediaPlayer player;
-        private Thread tRecord, tUpdate, tUpdateCheck;
+        private Thread tRecord;
         private Settings settings = Program.settings;
         private List<MountPoint> mountPoints;
         private ProgramList<Data.Program> programs;
         private ThumbnailToolbarButton btnPlay, btnRecord;
         private ToolTip ttRecording, ttVolume, ttTitle, ttProgram;
 
-        private delegate void RecordAbortedDelegate(string message);
-        private delegate void UpdateStatSuccessDelegate(XmlDocument doc, bool bThread);
-        private delegate void UpdateStatFailDelegate();
-        private delegate void StartUpdaterDelegate(string PopupText);
-        private delegate void UpdateInterfaceByNetworkDelegate(bool hasNetwork);
         private delegate void GotHttpContent(string content);
 
         private static MainForm instance;
@@ -95,6 +94,7 @@ namespace Maria_Radio
             }
         }
 
+        //OK
         private MainForm()
         {
             InitializeComponent();
@@ -102,9 +102,9 @@ namespace Maria_Radio
             ProgramsForm.Instance.CreateControl();
             ProgramsForm.Instance.AddOwnedForm(this);
 
-            settings.load();
             settings.onError += settings_onError;
-
+            settings.load();
+            
             Initialize();
             InitializeMediaPlayer();
 
@@ -115,11 +115,11 @@ namespace Maria_Radio
 
         #region private methods
 
-        //CHECK it
+        //CHECK IT
         private void Initialize()
         {
             //Texts set
-            lblHeader.Text = Program.NAME + " :: " + Program.WEBPAGE;
+            lblHeader.Text = string.Format("{0} :: {1}", Program.NAME, Program.WEBPAGE);
             Text = Program.NAME;
 
             //tool tips
@@ -172,11 +172,11 @@ namespace Maria_Radio
             // END OF CHECK IT
 
             //set record path
-            dir = settings.getValue(skRec.RecordPath, "");
+            recDir = settings.getValue(skRec.RecordPath, "");
 
-            if (Directory.Exists(dir))
+            if (Directory.Exists(recDir))
             {
-                dir = (dir.Equals(string.Empty) ? Environment.GetFolderPath(Environment.SpecialFolder.MyMusic) + "\\" : dir);
+                recDir = (recDir.Equals(string.Empty) ? Environment.GetFolderPath(Environment.SpecialFolder.MyMusic) + "\\" : recDir);
             }
 
             //Show program form
@@ -245,49 +245,168 @@ namespace Maria_Radio
             }
         }
 
+        //OK
         private void Record()
         {
             if (!recording)
             {
                 recording = true;
+
                 if (TaskbarManager.IsPlatformSupported)
                 {
                     btnRecord.Icon = Resources.irecord_e;
-                    btnRecord.Tooltip = "Felvétel leállítása";
+                    btnRecord.Tooltip = TITLE_STOP_RECORDING;
                 }
-                tRecord = new Thread(RecordThread);
+
+                tRecord = new Thread(delegate()
+                {
+                    HttpWebRequest request;
+                    HttpWebResponse response;
+
+                    int metaInt;
+                    int count = 0;
+                    int metadataLength = 0;
+
+                    byte[] buffer = new byte[512];
+
+                    Stream socketStream = null;
+                    Stream byteOut = null;
+
+                    request = (HttpWebRequest) WebRequest.Create(StreamURL);
+
+                    request.Headers.Clear();
+                    request.Method = "GET";
+                    request.Accept = "*/*";
+                    request.Headers.Add("Icy-MetaData", "1");
+                    request.UserAgent = Program.USER_AGENT;
+
+                    try
+                    {
+                        response = (HttpWebResponse) request.GetResponse();
+                    }
+                    catch (Exception ex)
+                    {
+                        StopRecording();
+
+                        Invoke(new Action(() =>
+                        {
+                            MessageBox.Show(this, string.Format("{0}\r\n{1}", ex.Message, ex.StackTrace), TITLE_RECORDER,
+                                MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }));
+
+                        return;
+                    }
+
+                    if (!response.StatusCode.ToString().Equals("OK"))
+                    {
+                        StopRecording();
+
+                        Invoke(new Action(() =>
+                        {
+                            MessageBox.Show(this, $"Hibás válasz a szerver felől! ({response.StatusCode})",
+                                TITLE_RECORDER, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }));
+
+                        return;
+                    }
+
+                    metaInt = Convert.ToInt32(response.GetResponseHeader("icy-metaint"));
+                    recFilename = $"maria_radio_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}";
+                    
+                    try
+                    {
+                        socketStream = response.GetResponseStream();
+                        byteOut = CreateFile(ref recDir, ref recFilename);
+
+                        while (recording)
+                        {
+                            int bufLen = socketStream.Read(buffer, 0, buffer.Length);
+                            if (bufLen < 0)
+                                return;
+
+                            for (int i = 0; i < bufLen; i++)
+                            {
+                                if (metadataLength != 0)
+                                {
+                                    metadataLength--;
+                                }
+                                else
+                                {
+                                    if (count++ < metaInt)
+                                    {
+                                        if (byteOut != null)
+                                        {
+                                            byteOut.Write(buffer, i, 1);
+                                            if (count%100 == 0)
+                                                byteOut.Flush();
+                                        }
+                                    }
+                                    else
+                                    {
+                                        metadataLength = Convert.ToInt32(buffer[i])*16;
+                                        count = 0;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        StopRecording();
+
+                        Invoke(new Action(() =>
+                        {
+                            MessageBox.Show(this, string.Format("{0}\r\n{1}", ex.Message, ex.StackTrace), TITLE_RECORDER,
+                                MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }));
+                    }
+                    finally
+                    {
+                        byteOut?.Close();
+                        socketStream?.Close();
+                    }
+                });
+
                 tRecord.Start();
+
                 timerRecording.Enabled = true;
                 lblRecording.Visible = true;
             }
             else
             {
-                StopRecord();
+                StopRecording();
+
                 if (settings.getValue(skRec.AfterRecordOpenFolder, true))
                 {
-                    Process.Start("explorer.exe", @"/select, " + dir + filename + ".mp3");
+                    Process.Start("explorer.exe", @"/select, " + recDir + recFilename);
                 }
             }
 
             UpdateTaskBarIcon();
         }
 
-        private void StopRecord()
+        //OK
+        private void StopRecording()
         {
             recording = false;
+
             btnRecord.Icon = Resources.irecord;
             btnRecord.Tooltip = "Felvétel";
+
             ibtnRecord.NormalImage = Resources.record;
+
             timerRecording.Enabled = false;
+
             lblRecording.Visible = false;
             lblRecording.Text = string.Format(TITLE_RECORDING, TimeSpan.FromSeconds(0L), FormatBytes(0));
         }
 
+        //OK
         private void GetHttpContent(string url, GotHttpContent method)
         {
             new Thread(delegate ()
             {
-                string response = null;
+                string response;
 
                 try
                 {
@@ -314,7 +433,7 @@ namespace Maria_Radio
                         }
 
                         if (
-                            MessageBox.Show(this, ex.Message + "\r\n" + ex.StackTrace, Program.NAME,
+                            MessageBox.Show(this, string.Format("{0}\r\n{1}", ex.Message, ex.StackTrace), Program.NAME,
                                 MessageBoxButtons.RetryCancel, MessageBoxIcon.Error) == DialogResult.Retry)
                         {
                             GetHttpContent(url, method);
@@ -323,103 +442,6 @@ namespace Maria_Radio
                 }
             }
             ).Start();
-        }
-
-        private void RecordThread()
-        {
-            HttpWebRequest request = null;
-            HttpWebResponse response = null;
-
-            int metaInt = 0;
-            int count = 0;
-            int metadataLength = 0;
-
-            byte[] buffer = new byte[512];
-
-            Stream socketStream = null;
-            Stream byteOut = null;
-
-            request = (HttpWebRequest)WebRequest.Create(StreamURL);
-
-            request.Headers.Clear();
-            request.Method = "GET";
-            request.Accept = "*/*";
-            request.Headers.Add("Icy-MetaData", "1");
-            request.UserAgent = Program.USER_AGENT;
-
-            try
-            {
-                response = (HttpWebResponse)request.GetResponse();
-            }
-            catch (Exception ex)
-            {
-                Invoke(new RecordAbortedDelegate(RecordAborted), ex.Message);
-                recording = false;
-                return;
-            }
-
-            if (!response.StatusCode.ToString().Equals("OK"))
-            {
-                Invoke(new RecordAbortedDelegate(RecordAborted), "Hibás válasz a szerver felől! (" + response.StatusCode + ")");
-                recording = false;
-                return;
-            }
-
-            metaInt = Convert.ToInt32(response.GetResponseHeader("icy-metaint"));
-            filename = "maria_radio_" + DateTime.Now.Year + "-" + (DateTime.Now.Month < 10 ? "0" + DateTime.Now.Month : DateTime.Now.Month.ToString()) + "-" + (DateTime.Now.Day < 10 ? "0" + DateTime.Now.Day : DateTime.Now.Day.ToString()) + "_" + (DateTime.Now.Hour < 10 ? "0" + DateTime.Now.Hour : DateTime.Now.Hour.ToString()) + "-" + (DateTime.Now.Minute < 10 ? "0" + DateTime.Now.Minute : DateTime.Now.Minute.ToString()) + "-" + (DateTime.Now.Second < 10 ? "0" + DateTime.Now.Second : DateTime.Now.Second.ToString());
-            try
-            {
-                socketStream = response.GetResponseStream();
-                byteOut = CreateFile(dir, filename);
-
-                while (recording)
-                {
-                    int bufLen = socketStream.Read(buffer, 0, buffer.Length);
-                    if (bufLen < 0)
-                        return;
-
-                    for (int i = 0; i < bufLen; i++)
-                    {
-                        if (metadataLength != 0)
-                        {
-                            metadataLength--;
-                        }
-                        else
-                        {
-                            if (count++ < metaInt)
-                            {
-                                if (byteOut != null)
-                                {
-                                    byteOut.Write(buffer, i, 1);
-                                    if (count % 100 == 0)
-                                        byteOut.Flush();
-                                }
-                            }
-                            else
-                            {
-                                metadataLength = Convert.ToInt32(buffer[i]) * 16;
-                                count = 0;
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                try
-                {
-                    Invoke(new RecordAbortedDelegate(RecordAborted), ex.Message);
-                    recording = false;
-                }
-                catch (Exception) { }
-            }
-            finally
-            {
-                if (byteOut != null)
-                    byteOut.Close();
-                if (socketStream != null)
-                    socketStream.Close();
-            }
         }
 
         //OK
@@ -454,12 +476,7 @@ namespace Maria_Radio
             }
         }
 
-        private void RecordAborted(string message)
-        {
-            StopRecord();
-            MessageBox.Show(this, message, Program.NAME + " felvevő", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        }
-
+        //OK
         private void UpdateTaskBarIcon()
         {
             if (!TaskbarManager.IsPlatformSupported)
@@ -469,7 +486,7 @@ namespace Maria_Radio
 
             if (recording && isPlayingBuffering())
             {
-                TaskbarManager.Instance.SetOverlayIcon(Handle, Resources.pr, "Hallgatás / Felvétel");
+                TaskbarManager.Instance.SetOverlayIcon(Handle, Resources.pr, TITLE_LISTEN_RECORD);
             }   
             else if (recording && !isPlayingBuffering())
             {
@@ -619,24 +636,26 @@ namespace Maria_Radio
             }*/
         }
 
+        //FAIL
         private void UpdateStatFail()
         {
             //MessageBox.Show(this, "Hiba történt az adatok lekérdezése közben!\r\nKérem ellenőrizze az internet kapcsolatát.", Program.NAME, MessageBoxButtons.OK, MessageBoxIcon.Error);
 
-            notify.Visible = true;
+            /*notify.Visible = true;
             notify.BalloonTipIcon = ToolTipIcon.Error;
             notify.BalloonTipTitle = Program.NAME;
             notify.BalloonTipText = "Hiba történt az adatok lekérdezése közben!";
             notify.ShowBalloonTip(0);
 
             if (this == null || IsDisposed || StreamURL == null || StreamURL.Equals(string.Empty))
-                UpdateInterfaceByNetwork(false);
+                UpdateInterfaceByNetwork(false);*/
             //    Process.GetCurrentProcess().Kill();
         }
 
+        //FAIL
         private void UpdateStatThread()
         {
-            try
+            /*try
             {
                 XmlDocument XMLDoc = new XmlDocument();
                 XMLDoc.Load(Program.STAT_URL);
@@ -649,66 +668,71 @@ namespace Maria_Radio
                     Invoke(new UpdateStatFailDelegate(UpdateStatFail));
                 }
                 catch (Exception) { }
-            }
+            }*/
         }
 
-        //NEM OK
+        //OK
         private void UpdateStat()
         {
             GetHttpContent(Program.MOUNTPOINTS_URL, SetMountPointList);
             GetHttpContent(string.Format(Program.PROGRAMS_URL, DateTime.Now.ToString("yyyyMMdd")), SetProgramList);
-
-            /*tUpdate = new Thread(UpdateStatThread);
-            tUpdate.Start();*/
         }
 
+        //OK
         private void CheckForUpdate()
         {
-            tUpdateCheck = new Thread(CheckForUpdateThread);
-            tUpdateCheck.Start();
-        }
-
-        private void CheckForUpdateThread()
-        {
-            bool updatable = false;
-            XmlDocument XMLDoc = new XmlDocument();
-            try
+            new Thread(delegate()
             {
-                XMLDoc.Load(Program.VERSION_CHECK_URL + Program.VERSION);
-            }
-            catch (Exception)
-            {
-                return;
-            }
-            XmlElement doc = XMLDoc.DocumentElement;
+                bool updatable = false;
 
-            string newVersion = "";
+                XmlDocument XMLDoc = new XmlDocument();
 
-            foreach (XmlElement el in doc.ChildNodes)
-            {
-                if (el.Name == "latestversion")
+                try
                 {
-                    newVersion = el.InnerText;
+                    XMLDoc.Load(Program.VERSION_CHECK_URL + Program.VERSION);
                 }
-                if (el.Name == "updateavailable" && el.InnerText == "true")
+                catch (Exception)
                 {
-                    updatable = true;
+                    return;
                 }
-            }
 
-            if (updatable)
-            {
-                Invoke(new StartUpdaterDelegate(StartUpdaterDeleg), "Újabb verziója jelent meg a " + Program.NAME + " programnak!\nÖn verziója: v" + Program.VERSION + "\nÚj verzió: v" + newVersion + "\n\nFrissítsük a " + Program.NAME + " programot?\n(A frissítés alatt a " + Program.NAME + " program bezárul.)");
+                XmlElement doc = XMLDoc.DocumentElement;
 
-            }
-        }
+                string newVersion = "";
 
-        private void StartUpdaterDeleg(string PopupText)
-        {
-            if (MessageBox.Show(this, PopupText, Program.NAME + " :: Frissítő", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1) == DialogResult.Yes)
-            {
-                StartUpdater();
-            }
+                foreach (XmlElement el in doc.ChildNodes)
+                {
+                    if (el.Name == "latestversion")
+                    {
+                        newVersion = el.InnerText;
+                    }
+                    if (el.Name == "updateavailable" && el.InnerText == "true")
+                    {
+                        updatable = true;
+                    }
+                }
+
+                if (updatable)
+                {
+                    Invoke(new Action(() =>
+                    {
+                        if (MessageBox.Show(
+                            this, 
+                            string.Format("Újabb verziója jelent meg a {0} programnak!\r\nÖn verziója: v{1}\nÚj verzió: v{2}\r\n\r\nFrissítsük a {0} programot?\r\n(A frissítés alatt a {0} program bezárul.)", 
+                                Program.NAME, 
+                                Program.VERSION, 
+                                newVersion), 
+                            string.Format("{0} :: Frissítő", Program.NAME), 
+                            MessageBoxButtons.YesNo, 
+                            MessageBoxIcon.Question, 
+                            MessageBoxDefaultButton.Button1
+                        ) == DialogResult.Yes)
+                        {
+                            StartUpdater();
+                        }
+                    }));
+                }
+            }).Start();
         }
 
         private void StartUpdater()
@@ -772,43 +796,7 @@ namespace Maria_Radio
                 notify.Visible = false;
             }
         }
-
-        //NEM OK
-        private void UpdateInterfaceByNetwork(bool hasNetwork)
-        {
-            if (hasNetwork)
-            {
-                lblTitle.ForeColor = Color.FromArgb(40, 153, 255);
-                lblTitle.Text = TITLE_CONNECTING;
-                //UpdateStat();
-            }
-            else
-            {
-                if (isPlayingBuffering())
-                {
-                    player.controls.stop();
-                }
-                if (recording)
-                {
-                    StopRecord();
-                }
-                    
-                lblTitle.ForeColor = Color.FromArgb(255, 0, 0); ;
-                lblTitle.Text = TITLE_NO_INTERNET_CONNECTION;
-
-                notify.Visible = true;
-                notify.BalloonTipIcon = ToolTipIcon.Error;
-                notify.BalloonTipTitle = Program.NAME;
-                notify.BalloonTipText = TITLE_NO_INTERNET_CONNECTION;
-                notify.ShowBalloonTip(0);
-
-                lblProgram.Text = string.Empty;
-                ibtnPlay.Enabled = false;
-                ibtnRecord.Enabled = false;
-                timerUpdate.Enabled = false;
-            }
-        }
-
+        
         #endregion
 
         //OK
@@ -986,7 +974,7 @@ namespace Maria_Radio
         }
 
         //OK
-        private static Stream CreateFile(String destPath, String filename)
+        private static Stream CreateFile(ref string destPath, ref string filename)
         {
             filename = filename.Replace(":", "");
             filename = filename.Replace("/", "");
@@ -998,6 +986,11 @@ namespace Maria_Radio
             filename = filename.Replace("*", "");
             filename = filename.Replace("\"", "");
 
+            if (destPath[destPath.Length - 1] != '\\')
+            {
+                destPath += '\\';
+            }
+
             try
             {
                 if (!Directory.Exists(destPath))
@@ -1005,13 +998,17 @@ namespace Maria_Radio
 
                 if (!File.Exists(destPath + filename + ".mp3"))
                 {
-                    return File.Create(destPath + filename + ".mp3");
+                    filename += ".mp3";
+
+                    return File.Create(destPath + filename);
                 }
+
                 for (int i = 1; ; i++)
                 {
-                    if (!File.Exists(destPath + filename + "(" + i + ").mp3"))
+                    if (!File.Exists(destPath + filename + "_(" + i + ").mp3"))
                     {
-                        return File.Create(destPath + filename + "(" + i + ").mp3");
+                        filename += "_(" + i + ").mp3";
+                        return File.Create(destPath + filename);
                     }
                 }
             }
@@ -1181,11 +1178,7 @@ namespace Maria_Radio
             settings.save();
         }
 
-        private void timerUpdate_Tick(object sender, EventArgs e)
-        {
-            UpdateStat();
-        }
-
+        //OK
         private void ibtnX_Click(object sender, EventArgs e)
         {
             Close();
@@ -1212,6 +1205,13 @@ namespace Maria_Radio
             }
         }
 
+        //OK
+        private void timerUpdateStats_Tick(object sender, EventArgs e)
+        {
+            UpdateStat();
+        }
+
+        //OK
         private void timerRecording_Tick(object sender, EventArgs e)
         {
             if (!lighted)
@@ -1229,32 +1229,41 @@ namespace Maria_Radio
                 lighted = false;
             }
 
-            
-            ttRecording = ttRecording ?? new ToolTip();
-            ttRecording.SetToolTip(lblRecording, "Hang mentése ide: " + (dir + filename + ".mp3") + " (Kattins ide a mappa megnyitásához.)");
 
-            if (File.Exists(dir + filename + ".mp3"))
+            string filePath = recDir + recFilename;
+
+            ttRecording = ttRecording ?? new ToolTip();
+            ttRecording.SetToolTip(lblRecording, $"Hang mentése ide: {filePath} (Kattins ide a mappa megnyitásához.)");
+
+            if (File.Exists(filePath))
             {
-                long size = (new FileInfo(dir + filename + ".mp3")).Length;
+                long size = (new FileInfo(filePath)).Length;
 
                 lblRecording.Text = string.Format(TITLE_RECORDING,
-                    TimeSpan.FromSeconds((long)(((double)size * 8) / (cbMountPoints.SelectedItem as MountPoint).Bitrate)),
+                    TimeSpan.FromSeconds((long) (((double) size*8)/(cbMountPoints.SelectedItem as MountPoint).Bitrate)),
                     FormatBytes(size)
                     );
             }
             else
+            {
                 lblRecording.Text = string.Format(TITLE_RECORDING, TimeSpan.FromSeconds(0L), FormatBytes(0));
+            }
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (recording && MessageBox.Show(this, "Hang felvevés folyamatban van!\nBiztos, hogy bezárja a programot?", Program.NAME, MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) == DialogResult.No)
+            if (recording && MessageBox.Show(this, "Hang felvevés folyamatban van!\nBiztos, hogy bezárja a programot?", 
+                Program.NAME, MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) == DialogResult.No)
             {
                 e.Cancel = true;
             }
-            else {
-                if (tRecord != null)
-                    tRecord.Abort();
+            else
+            {
+                StopRecording();
+                tRecord.Join();
+
+                //tRecord?.Abort();
+
                 NetworkChange.NetworkAddressChanged -= NetworkChange_NetworkAddressChanged;
             }
         }
@@ -1284,11 +1293,6 @@ namespace Maria_Radio
             }
         }
 
-        private void timerUpdatePrograms_Tick(object sender, EventArgs e)
-        {
-            UpdateStat();
-        }
-
         private void MainForm_LocationChanged(object sender, EventArgs e)
         {
             if (initialized)
@@ -1313,7 +1317,7 @@ namespace Maria_Radio
 
         private void lblRecording_Click(object sender, EventArgs e)
         {
-            Process.Start("explorer.exe", @"/select, " + dir + filename + ".mp3");
+            Process.Start("explorer.exe", @"/select, " + recDir + recFilename);
         }
         
         private void timerNotify_Tick(object sender, EventArgs e)
@@ -1438,14 +1442,53 @@ namespace Maria_Radio
             }
         }
 
+        //OK
         private void notify_BalloonTipClicked(object sender, EventArgs e)
         {
             HideNotify();
         }
 
+        private void UpdateInterfaceByNetwork(bool HasNetworkConnection)
+        {
+            if (HasNetworkConnection)
+            {
+                lblTitle.ForeColor = Color.FromArgb(40, 153, 255);
+                lblTitle.Text = TITLE_CONNECTING;
+                //UpdateStat();
+            }
+            else
+            {
+                if (isPlayingBuffering())
+                {
+                    player.controls.stop();
+                }
+                if (recording)
+                {
+                    StopRecording();
+                }
+
+                lblTitle.ForeColor = Color.FromArgb(255, 0, 0); ;
+                lblTitle.Text = TITLE_NO_INTERNET_CONNECTION;
+
+                notify.Visible = true;
+                notify.BalloonTipIcon = ToolTipIcon.Error;
+                notify.BalloonTipTitle = Program.NAME;
+                notify.BalloonTipText = TITLE_NO_INTERNET_CONNECTION;
+                notify.ShowBalloonTip(0);
+
+                lblProgram.Text = string.Empty;
+                ibtnPlay.Enabled = false;
+                ibtnRecord.Enabled = false;
+            }
+        }
+
+        //OK
         public void NetworkChange_NetworkAddressChanged(object sender, EventArgs e)
         {
-            Invoke(new UpdateInterfaceByNetworkDelegate(UpdateInterfaceByNetwork), HasNetworkConnection());
+            Invoke(new Action(() =>
+            {
+                UpdateInterfaceByNetwork(HasNetworkConnection());
+            }));
         }
 
         private void miSettings_Click(object sender, EventArgs e)

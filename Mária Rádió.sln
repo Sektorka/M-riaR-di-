@@ -7,8 +7,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mária Rádió", "Mária R�
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Updater", "Updater\Updater.csproj", "{20F9B04D-0733-45A0-9052-382A82FA24E5}"
 EndProject
-Project("{840C416C-B8F3-42BC-B0DD-F6BB14C9F8CB}") = "Mária Rádió telepítő_advinst", "Mária Rádió telepítő_advinst\Mária Rádió telepítő_advinst.aiproj", "{78354ECF-0EE3-4F81-80AA-2F2945A427D0}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,18 +37,6 @@ Global
 		{20F9B04D-0733-45A0-9052-382A82FA24E5}.Release|Mixed Platforms.Build.0 = Release|x86
 		{20F9B04D-0733-45A0-9052-382A82FA24E5}.Release|x86.ActiveCfg = Release|x86
 		{20F9B04D-0733-45A0-9052-382A82FA24E5}.Release|x86.Build.0 = Release|x86
-		{78354ECF-0EE3-4F81-80AA-2F2945A427D0}.Debug|Any CPU.ActiveCfg = All
-		{78354ECF-0EE3-4F81-80AA-2F2945A427D0}.Debug|Any CPU.Build.0 = All
-		{78354ECF-0EE3-4F81-80AA-2F2945A427D0}.Debug|Mixed Platforms.ActiveCfg = All
-		{78354ECF-0EE3-4F81-80AA-2F2945A427D0}.Debug|Mixed Platforms.Build.0 = All
-		{78354ECF-0EE3-4F81-80AA-2F2945A427D0}.Debug|x86.ActiveCfg = All
-		{78354ECF-0EE3-4F81-80AA-2F2945A427D0}.Debug|x86.Build.0 = All
-		{78354ECF-0EE3-4F81-80AA-2F2945A427D0}.Release|Any CPU.ActiveCfg = All
-		{78354ECF-0EE3-4F81-80AA-2F2945A427D0}.Release|Any CPU.Build.0 = All
-		{78354ECF-0EE3-4F81-80AA-2F2945A427D0}.Release|Mixed Platforms.ActiveCfg = All
-		{78354ECF-0EE3-4F81-80AA-2F2945A427D0}.Release|Mixed Platforms.Build.0 = All
-		{78354ECF-0EE3-4F81-80AA-2F2945A427D0}.Release|x86.ActiveCfg = All
-		{78354ECF-0EE3-4F81-80AA-2F2945A427D0}.Release|x86.Build.0 = All
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
